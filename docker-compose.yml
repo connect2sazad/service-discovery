@@ -1,0 +1,73 @@
+services:
+  
+  consul:
+    image: hashicorp/consul:latest
+    container_name: consul
+    command: agent -dev -client=0.0.0.0 -ul
+    ports:
+      - "8500:8500"
+      - "8600:8600/tcp"
+      - "8600:8600/udp"
+
+  service-alpha:
+    container_name: service-alpha
+    build: 
+      context: ./service-alpha
+      dockerfile: Dockerfile
+    expose:
+      - "5000"
+    env_file:
+      - service-alpha/.env
+    healthcheck:
+      test: ["CMD", "node", "-e",
+        "require('http').get('http://127.0.0.1:5000/',
+        r=> process.exit(r.statusCode >= 200 && r.statusCode < 400 ? 0 : 1))
+        .on('error', () => process.exit(1))"
+      ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  service-beta:
+    container_name: service-beta
+    build: 
+      context: ./service-beta
+      dockerfile: Dockerfile
+    expose:
+      - "5001"
+    env_file:
+      - service-beta/.env
+    healthcheck:
+      test: ["CMD", "node", "-e",
+        "require('http').get('http://127.0.0.1:5001/',
+        r=> process.exit(r.statusCode >= 200 && r.statusCode < 400 ? 0 : 1))
+        .on('error', () => process.exit(1))"
+      ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  service-delta:
+    container_name: service-delta
+    build: 
+      context: ./service-delta
+      dockerfile: Dockerfile
+    expose:
+      - "5002"
+    env_file:
+      - service-delta/.env
+    healthcheck:
+      test: ["CMD", "node", "-e",
+        "require('http').get('http://127.0.0.1:5002/',
+        r=> process.exit(r.statusCode >= 200 && r.statusCode < 400 ? 0 : 1))
+        .on('error', () => process.exit(1))"
+      ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
