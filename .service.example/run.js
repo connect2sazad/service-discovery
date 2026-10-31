@@ -143,6 +143,43 @@ service.get('/discover/:target', async (req, res) => {
     }
 });
 
+service.get('/communicate/:target', async (req, res) => {
+    try {
+        const targetService = `service-${req.params.target}`;
+
+        const instance = await discoverService(targetService);
+
+        if (!instance) {
+            return res.status(503).json({
+                error: 'No healthy service instance available',
+                service: targetService
+            });
+        }
+
+        const targetURL = `http://${instance.address}:${instance.port}/info`;
+
+        console.log(`Calling ${targetURL}`);
+
+        const response = await fetch(targetURL);
+        const data = await response.json();
+
+        return res.status(200).json({
+            message: 'Service communication successful',
+            source: SERVICE_NAME,
+            target: targetService,
+            response: data
+        });
+
+    } catch (error) {
+        console.error('Service communication failed:', error.message);
+
+        return res.status(502).json({
+            error: 'Service communication failed',
+            details: error.message
+        });
+    }
+});
+
 console.log('Starting HTTP server...');
 
 const server = service.listen(PORT, '0.0.0.0', async () => {
