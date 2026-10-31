@@ -18,6 +18,7 @@ const SERVICE_NAME = `service-${NAME}`;
 const SERVICE_ID = `${SERVICE_NAME}-${PORT}`;
 
 const CONSUL_URL = `http://${CONSUL_HOST}:${CONSUL_PORT}`;
+const SERVICE_ADDRESS = process.env.SERVICE_ADDRESS || '127.0.0.1';
 
 service.get('/', (req, res) => {
     res.status(200).json({
@@ -39,11 +40,11 @@ async function registerWithConsul() {
     const registration = {
         ID: SERVICE_ID,
         Name: SERVICE_NAME,
-        Address: process.env.SERVICE_ADDRESS || '127.0.0.1',
+        Address: SERVICE_ADDRESS,
         Port: PORT,
         Tags: ['express', 'nodejs'],
         Check: {
-            HTTP: `http://${process.env.SERVICE_ADDRESS || '127.0.0.1'}:${PORT}/`,
+            HTTP: `http://${SERVICE_ADDRESS}:${PORT}/`,
             Interval: '10s',
             Timeout: '5s',
             DeregisterCriticalServiceAfter: '1m'
@@ -84,7 +85,7 @@ async function deregisterFromConsul() {
 
 console.log('Starting HTTP server...');
 
-const server = service.listen(PORT, async () => {
+const server = service.listen(PORT, '0.0.0.0', async () => {
     try {
         console.log('Server started successfully!');
         console.log(`Service Name: ${SERVICE_NAME}`);
