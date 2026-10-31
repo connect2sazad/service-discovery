@@ -83,6 +83,66 @@ async function deregisterFromConsul() {
     }
 }
 
+// Discover service through Consul
+async function discoverService(serviceName) {
+    try {
+        const response = await fetch(
+            `${CONSUL_URL}/v1/health/service/${serviceName}?passing`
+        );
+
+        if (!response.ok) {
+            throw new Error(`Consul query failed: ${response.status}`);
+        }
+
+        const instances = await response.json();
+
+        if (instances.length === 0) {
+            return null;
+        }
+
+        // Select a random healthy instance
+        const instance = instances[
+            Math.floor(Math.random() * instances.length)
+        ];
+
+        return {
+            address: instance.Service.Address || instance.Node.Address,
+            port: instance.Service.Port
+        };
+
+    } catch (error) {
+        console.error('Service discovery failed:', error.message);
+        throw error;
+    }
+}
+
+service.get('/discover/:target', async (req, res) => {
+    try {
+        const targetService = `service-${req.params.target}`;
+
+        const instance = await discoverService(targetService);
+
+        if (!instance) {
+            return res.status(503).json({
+                message: 'No healthy instance found',
+                service: targetService
+            });
+        }
+
+        res.json({
+            message: 'Service discovered successfully',
+            service: targetService,
+            address: instance.address,
+            port: instance.port
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+});
+
 console.log('Starting HTTP server...');
 
 const server = service.listen(PORT, '0.0.0.0', async () => {
