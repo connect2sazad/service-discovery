@@ -31,7 +31,7 @@ async function discoverService(service) {
 
     return {
         address: instance.Service.Address || instance.Node.Address,
-        prot: instance.Service.Port,
+        port: instance.Service.Port,
     }
 }
 
