@@ -92,12 +92,12 @@ services:
       context: ./api-gateway
       dockerfile: Dockerfile
     expose:
-      - "4999"
+      - "555"
     environment:
-      PORT: 4999
+      PORT: 555
       CONSUL_URL: http://consul:8500
     ports:
-      - "4999:4999"
+      - "555:555"
     healthcheck:
       test: ["CMD", "node", "-e",
         "require('http').get('http://127.0.0.1:5002/',

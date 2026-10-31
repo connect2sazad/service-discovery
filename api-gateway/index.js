@@ -4,7 +4,7 @@ const app = express();
 
 app.use(express.json());
 
-const PORT = process.env.PORT || 4999;
+const PORT = process.env.PORT || 555;
 const CONSUL_URL = process.env.CONSUL_URL || `http://consul:${PORT}`
 
 const allowedServices = [
