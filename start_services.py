@@ -31,6 +31,9 @@ def generate_env(name, port):
     config = (
         f"PORT={port}\n"
         f"NAME={name}\n"
+        "CONSUL_HOST=localhost\n"
+        "CONSUL_PORT=8500\n"
+        "SERVICE_ADDRESS=127.0.0.1\n"
     )
     
     service_env = service_dir / ".env"
