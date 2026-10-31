@@ -1,93 +1,309 @@
 # Service Discovery
 
+A microservices service-discovery project built using **Node.js, Express.js, Docker Compose, and HashiCorp Consul**.
 
+**Roadmap.sh Project:** [Service Discovery](https://roadmap.sh/projects/service-discovery)  
+**Source Code:** [GitLab Repository](https://gitlab.com/connect2sazad/service-discovery/)
 
-## Getting started
+## Overview
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+This project demonstrates how microservices can register themselves with a service registry, discover other services dynamically, and communicate without relying on hardcoded IP addresses.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+It consists of three dummy services, an API Gateway, and HashiCorp Consul.
 
-## Add your files
+### Architecture
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+```mermaid
+flowchart TD
+    Client[Client]
+    Gateway[API Gateway :555]
+    Consul[Consul :8500]
+    Alpha[Service Alpha :5000]
+    Beta[Service Beta :5001]
+    Delta[Service Delta :5002]
 
+    Client --> Gateway
+
+    Gateway -->|Discover healthy services| Consul
+    Consul -->|Service address and port| Gateway
+
+    Gateway --> Alpha
+    Gateway --> Beta
+    Gateway --> Delta
+
+    Alpha -->|Service discovery| Consul
+    Alpha -->|HTTP request| Beta
+    Alpha -->|HTTP request| Delta
+
+    Alpha -.->|Register and health checks| Consul
+    Beta -.->|Register and health checks| Consul
+    Delta -.->|Register and health checks| Consul
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/connect2sazad/service-discovery.git
-git branch -M main
-git push -uf origin main
+
+## Technology Stack
+
+- Node.js and Express.js
+- JavaScript (ES Modules)
+- HashiCorp Consul
+- Docker and Docker Compose
+- Python 3
+- AWS EC2 (deployment environment)
+
+## Project Components
+
+### 1. Dummy Services
+
+Three independent services are generated using a shared service template and a Python script.
+
+| Service | Port | Service Name |
+|---|---:|---|
+| Service Alpha | 5000 | `service-alpha` |
+| Service Beta | 5001 | `service-beta` |
+| Service Delta | 5002 | `service-delta` |
+
+Each service provides:
+
+- `/` – Health-check endpoint.
+- `/info` – Returns the service name and current timestamp.
+
+Example response:
+
+```json
+{
+  "current_timestamp": 1793472991643,
+  "name": "service-alpha"
+}
 ```
 
-## Integrate with your tools
+Each service automatically registers itself with Consul during startup and periodically reports its health through HTTP health checks.
 
-* [Set up project integrations](https://gitlab.com/connect2sazad/service-discovery/-/settings/integrations)
+### 2. HashiCorp Consul
 
-## Collaborate with your team
+Consul acts as the service registry and discovery mechanism.
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+It is responsible for:
 
-## Test and Deploy
+- Maintaining the service catalog.
+- Registering and tracking service instances.
+- Performing health checks.
+- Returning healthy service instances through its HTTP API.
 
-Use the built-in continuous integration in GitLab.
+Consul UI:
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+```text
+http://<EC2_PUBLIC_IP>:8500
+```
 
-***
+### 3. API Gateway
 
-# Editing this README
+The API Gateway provides a single entry point for accessing the services.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+It discovers healthy service instances through Consul and forwards incoming requests to the appropriate service.
 
-## Suggestions for a good README
+Gateway endpoints:
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+| Endpoint | Destination |
+|---|---|
+| `/service-alpha/info` | Service Alpha |
+| `/service-beta/info` | Service Beta |
+| `/service-delta/info` | Service Delta |
 
-## Name
-Choose a self-explaining name for your project.
+Gateway URL:
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+```text
+http://<EC2_PUBLIC_IP>:555
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### 4. Service-to-Service Communication
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+Service Alpha can dynamically discover and communicate with other services through Consul.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+Available endpoints:
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+```text
+http://<EC2_PUBLIC_IP>:5000/discover/beta
+http://<EC2_PUBLIC_IP>:5000/discover/delta
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+http://<EC2_PUBLIC_IP>:5000/communicate/beta
+http://<EC2_PUBLIC_IP>:5000/communicate/delta
+```
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+The communication workflow:
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+1. Alpha receives a request to communicate with another service.
+2. Alpha queries Consul for healthy instances.
+3. Consul returns the service address and port.
+4. Alpha sends an HTTP request to the discovered service.
+5. Alpha returns the response to the original caller.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+## Setup and Installation
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+### Prerequisites
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+- An AWS EC2 instance (Ubuntu recommended).
+- Git.
+- Python 3.
+- Docker Engine.
+- Docker Compose plugin.
 
-## License
-For open source projects, say how it is licensed.
+### Step 1: Connect to your EC2 instance
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Create an EC2 instance and connect using SSH.
+
+If you need help creating and connecting to an EC2 instance, check out my [YouTube Playlist on AWS](https://www.youtube.com/playlist?list=PLP-z5YySqpBA).
+
+### Step 2: Clone the repository
+
+```bash
+git clone https://gitlab.com/connect2sazad/service-discovery.git
+
+cd service-discovery
+```
+
+### Step 3: Generate the services
+
+```bash
+python3 gen_services.py
+```
+
+This script generates the three dummy services using the shared service template and their respective configurations.
+
+### Step 4: Start the application
+
+```bash
+docker compose up -d --build
+```
+
+This builds and starts the application containers.
+
+Check the running containers:
+
+```bash
+docker compose ps
+```
+
+### Step 5: Access the application
+
+Replace `<EC2_PUBLIC_IP>` with your EC2 instance's public IP address.
+
+API Gateway:
+
+```text
+http://<EC2_PUBLIC_IP>:555
+```
+
+Consul Dashboard:
+
+```text
+http://<EC2_PUBLIC_IP>:8500
+```
+
+**AWS Security Group:** Allow the required ports only from trusted IP addresses. For a public demonstration, avoid exposing the Consul dashboard and individual service ports to everyone. The Gateway can be the public entry point.
+
+## Testing
+
+### Test the API Gateway
+
+```bash
+curl http://localhost:555/service-alpha/info
+
+curl http://localhost:555/service-beta/info
+
+curl http://localhost:555/service-delta/info
+```
+
+Each endpoint should return the corresponding service name and current timestamp.
+
+### Test Service Discovery
+
+```bash
+curl http://localhost:5000/discover/beta
+
+curl http://localhost:5000/discover/delta
+```
+
+These endpoints demonstrate that Alpha can discover healthy service instances through Consul.
+
+### Test Service-to-Service Communication
+
+```bash
+curl http://localhost:5000/communicate/beta
+
+curl http://localhost:5000/communicate/delta
+```
+
+Alpha discovers the target service through Consul and retrieves its `/info` response.
+
+### Test Failure Detection and Recovery
+
+Stop Service Beta:
+
+```bash
+docker compose stop service-beta
+```
+
+Check its health through Consul:
+
+```bash
+curl "http://localhost:8500/v1/health/service/service-beta?passing"
+```
+
+When Beta becomes unhealthy, Consul no longer returns it as a passing instance.
+
+Try communicating with Beta:
+
+```bash
+curl http://localhost:5000/communicate/beta
+```
+
+Expected response:
+
+```json
+{
+  "error": "No healthy service instance available",
+  "service": "service-beta"
+}
+```
+
+Restart Service Beta:
+
+```bash
+docker compose start service-beta
+```
+
+After Consul marks Beta healthy again, test communication:
+
+```bash
+curl http://localhost:5000/communicate/beta
+```
+
+Communication should automatically recover without changing any application configuration.
+
+## Cleanup
+
+To remove the Docker resources created by this repository, run:
+
+```bash
+sudo chmod +x dc.sh
+
+./dc.sh
+```
+
+Review the cleanup script before execution to understand exactly which containers, images, networks, or volumes it removes.
+
+## Key Learnings
+
+Through this project, I explored:
+
+- Microservices architecture.
+- Service registration and discovery.
+- HashiCorp Consul and its HTTP API.
+- Health checks and unhealthy service detection.
+- Dynamic service-to-service communication.
+- API Gateway and request routing.
+- Docker Compose orchestration.
+- Failure handling and service recovery.
+
+---
+
+**Project developed as part of the [roadmap.sh Service Discovery challenge](https://roadmap.sh/projects/service-discovery).**
