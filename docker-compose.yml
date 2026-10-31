@@ -3,7 +3,7 @@ services:
   consul:
     image: hashicorp/consul:latest
     container_name: consul
-    command: agent -dev -client=0.0.0.0 -ul
+    command: agent -dev -client=0.0.0.0 -ui
     ports:
       - "8500:8500"
       - "8600:8600/tcp"
@@ -29,6 +29,10 @@ services:
       retries: 5
       start_period: 15s
     restart: unless-stopped
+    depends_on:
+      - consul
+    networks:
+      - microservices-network
 
   service-beta:
     container_name: service-beta
@@ -50,6 +54,10 @@ services:
       retries: 5
       start_period: 15s
     restart: unless-stopped
+    depends_on:
+      - consul
+    networks:
+      - microservices-network
 
   service-delta:
     container_name: service-delta
@@ -71,3 +79,12 @@ services:
       retries: 5
       start_period: 15s
     restart: unless-stopped
+    depends_on:
+      - consul
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    name: microservices-network
+    driver: bridge
