@@ -45,19 +45,19 @@ app.get('/', (req, res) => {
 
 app.get("/:service/info", async(req, res) => {
     
-    const service = req.params.service;
+    const service_name = req.params.service;
 
     try {
 
         // validate requested service
-        if(!allowedServices.includes(serviceName)){
+        if(!allowedServices.includes(service_name)){
             return res.status(404).json({
                 error: "Service not found"
             });
         }
 
         // discover service through Consul
-        const service = await discoverService(service);
+        const service = await discoverService(service_name);
 
         if(!service){
             return res.status(503).json({
